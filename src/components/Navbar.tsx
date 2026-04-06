@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { notifications } from "@/lib/data";
 
+import { useAuth } from "@/hooks/useAuth";
+
 const navLinks = [
   { label: "Dashboard", icon: LayoutDashboard, href: "#" },
   { label: "Live Status", icon: Radio, href: "#" },
@@ -22,12 +24,18 @@ const navLinks = [
   { label: "Reports", icon: FileBarChart, href: "#" },
 ];
 
-export default function Navbar() {
+interface NavbarProps {
+  onLoginClick?: () => void;
+}
+
+export default function Navbar({ onLoginClick }: NavbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("Dashboard");
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
+
+  const { isAuthenticated, isGuest, user, logout } = useAuth();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -86,120 +94,138 @@ export default function Navbar() {
           {/* Right Side */}
           <div className="flex items-center gap-2">
             {/* Notification Bell */}
-            <div ref={notifRef} className="relative">
-              <button
-                onClick={() => {
-                  setNotifOpen(!notifOpen);
-                  setUserOpen(false);
-                }}
-                className="relative p-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
-              >
-                <Bell size={18} />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-slate-950">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
+            {isAuthenticated && (
+              <div ref={notifRef} className="relative">
+                <button
+                  onClick={() => {
+                    setNotifOpen(!notifOpen);
+                    setUserOpen(false);
+                  }}
+                  className="relative p-2.5 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+                >
+                  <Bell size={18} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-slate-950">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
 
-              {/* Notification Dropdown */}
-              {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-                    <h3 className="text-sm font-semibold text-slate-200">
-                      Notifications
-                    </h3>
-                    <button
-                      onClick={() => setNotifOpen(false)}
-                      className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors ${
-                          !notif.read ? "bg-blue-500/[0.04]" : ""
-                        }`}
+                {/* Notification Dropdown */}
+                {notifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+                      <h3 className="text-sm font-semibold text-slate-200">
+                        Notifications
+                      </h3>
+                      <button
+                        onClick={() => setNotifOpen(false)}
+                        className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                       >
-                        <div className="flex items-start gap-3">
-                          {!notif.read && (
-                            <span className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                          )}
-                          <div className={!notif.read ? "" : "ml-5"}>
-                            <p className="text-sm text-slate-300">
-                              {notif.message}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              {notif.time}
-                            </p>
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          className={`px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors ${
+                            !notif.read ? "bg-blue-500/[0.04]" : ""
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {!notif.read && (
+                              <span className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                            )}
+                            <div className={!notif.read ? "" : "ml-5"}>
+                              <p className="text-sm text-slate-300">
+                                {notif.message}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {notif.time}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="px-4 py-2.5 text-center border-t border-white/[0.06]">
-                    <button className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors cursor-pointer">
-                      View all notifications
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* User Avatar Dropdown */}
-            <div ref={userRef} className="relative">
-              <button
-                onClick={() => {
-                  setUserOpen(!userOpen);
-                  setNotifOpen(false);
-                }}
-                className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
-              >
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg">
-                  R
-                </div>
-                <ChevronDown
-                  size={14}
-                  className={`text-slate-400 transition-transform duration-200 ${
-                    userOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {userOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="px-4 py-3 border-b border-white/[0.06]">
-                    <p className="text-sm font-semibold text-slate-200">
-                      Raghav
-                    </p>
-                    <p className="text-xs text-slate-500">raghav@aitrain.io</p>
-                  </div>
-                  <div className="py-1">
-                    {[
-                      { icon: User, label: "Profile" },
-                      { icon: Settings, label: "Settings" },
-                    ].map((item) => (
-                      <button
-                        key={item.label}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] transition-colors cursor-pointer"
-                      >
-                        <item.icon size={15} />
-                        {item.label}
+                      ))}
+                    </div>
+                    <div className="px-4 py-2.5 text-center border-t border-white/[0.06]">
+                      <button className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors cursor-pointer">
+                        View all notifications
                       </button>
-                    ))}
+                    </div>
                   </div>
-                  <div className="border-t border-white/[0.06] py-1">
-                    <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/[0.05] transition-colors cursor-pointer">
-                      <LogOut size={15} />
-                      Sign out
-                    </button>
+                )}
+              </div>
+            )}
+
+            {/* User Avatar OR Login Button */}
+            {isAuthenticated && user ? (
+              <div ref={userRef} className="relative">
+                <button
+                  onClick={() => {
+                    setUserOpen(!userOpen);
+                    setNotifOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-1.5 pr-3 rounded-xl hover:bg-white/[0.05] transition-all duration-200 cursor-pointer"
+                >
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg uppercase">
+                    {user.email.charAt(0)}
                   </div>
-                </div>
-              )}
-            </div>
+                  <ChevronDown
+                    size={14}
+                    className={`text-slate-400 transition-transform duration-200 ${
+                      userOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {userOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-3 border-b border-white/[0.06]">
+                      <p className="text-sm font-semibold text-slate-200">
+                        Active User
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    </div>
+                    <div className="py-1">
+                      {[
+                        { icon: User, label: "Profile" },
+                        { icon: Settings, label: "Settings" },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] transition-colors cursor-pointer"
+                        >
+                          <item.icon size={15} />
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="border-t border-white/[0.06] py-1">
+                      <button 
+                        onClick={() => {
+                          logout();
+                          setUserOpen(false);
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/[0.05] transition-colors cursor-pointer"
+                      >
+                        <LogOut size={15} />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={onLoginClick}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors cursor-pointer"
+              >
+                Sign In / Sign Up
+              </button>
+            )}
+            
           </div>
         </div>
       </div>

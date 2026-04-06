@@ -1,11 +1,49 @@
 import GlassCard from "./ui/GlassCard";
 import Badge from "./ui/Badge";
-import { liveTrackerData } from "@/lib/data";
+import { liveTrackerData as defaultData } from "@/lib/data";
+import type { TrainStatus } from "@/services/api";
 import { Gauge, Radio, MapPin, Train } from "lucide-react";
 
-export default function LiveTracker() {
-  const data = liveTrackerData;
-  const progressPercent = (data.distanceCovered / data.totalDistance) * 100;
+interface LiveTrackerProps {
+  trainData?: TrainStatus | null;
+}
+
+export default function LiveTracker({ trainData }: LiveTrackerProps) {
+  // Use mock data if no dynamic trainData is passed
+  const isMock = !trainData;
+  const data = trainData || defaultData;
+  
+  // Progress calculation
+  const distanceCovered = isMock ? defaultData.distanceCovered : data.distance_covered;
+  const totalDistance = isMock ? defaultData.totalDistance : data.total_distance;
+  const progressPercent = totalDistance > 0 ? (distanceCovered / totalDistance) * 100 : 0;
+  
+  // Map fields from dynamic data or fallback
+  const trainName = isMock ? defaultData.trainName : data.train_name;
+  const trainNumber = isMock ? defaultData.trainNumber : data.train_number;
+  const lastUpdated = isMock ? defaultData.lastUpdated : data.last_updated;
+  const currentSpeed = isMock ? defaultData.currentSpeed : data.speed;
+  const delayMin = isMock ? defaultData.delayMinutes : data.delay;
+  
+  // Format route stations
+  const getStations = () => {
+    if (isMock) return defaultData.routeStations;
+    
+    // Convert dynamic route_stations to format matching UI
+    return data.route_stations.map((st, idx) => {
+      const arrived = idx <= (data.route_stations.indexOf(data.current_station) || 0);
+      const current = st === data.current_station;
+      return {
+        name: st,
+        code: st.substring(0, 4).toUpperCase(),
+        arrived,
+        current,
+        scheduledTime: "--:--", // Dynamic API currently lacks schedule times per station
+      };
+    });
+  };
+  
+  const routeStations = getStations();
 
   return (
     <GlassCard className="p-5 h-full">
@@ -16,7 +54,7 @@ export default function LiveTracker() {
           Live Train Tracker
         </h2>
         <Badge variant="info" pulse>
-          Live • {data.lastUpdated}
+          Live • {lastUpdated}
         </Badge>
       </div>
 
@@ -27,9 +65,9 @@ export default function LiveTracker() {
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-200">
-            {data.trainName}
+            {trainName}
           </p>
-          <p className="text-xs text-slate-400">#{data.trainNumber}</p>
+          <p className="text-xs text-slate-400">#{trainNumber}</p>
         </div>
       </div>
 
@@ -67,14 +105,18 @@ export default function LiveTracker() {
         </div>
 
         {/* Start and End labels */}
-        <div className="absolute bottom-2 left-3 text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-md">
-          {data.routeStations[0].code}
-        </div>
-        <div className="absolute bottom-2 right-3 text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-md">
-          {data.routeStations[data.routeStations.length - 1].code}
-        </div>
+        {routeStations.length > 0 && (
+          <>
+            <div className="absolute bottom-2 left-3 text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-md">
+              {routeStations[0].code}
+            </div>
+            <div className="absolute bottom-2 right-3 text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-md">
+              {routeStations[routeStations.length - 1].code}
+            </div>
+          </>
+        )}
         <div className="absolute top-2 right-3 text-[10px] text-slate-500">
-          {data.distanceCovered}/{data.totalDistance} km
+          {distanceCovered}/{totalDistance} km
         </div>
       </div>
 
@@ -84,19 +126,19 @@ export default function LiveTracker() {
         <span className="text-sm text-slate-300">
           Currently:{" "}
           <span className="font-semibold text-white">
-            {data.currentSpeed} km/h
+            {currentSpeed} km/h
           </span>
         </span>
         <span className="text-slate-600 mx-1">•</span>
-        <span className="text-sm text-red-400 font-medium">
-          {data.delayMinutes} min late
+        <span className={`text-sm font-medium ${delayMin > 0 ? "text-red-400" : "text-emerald-400"}`}>
+          {delayMin > 0 ? `${delayMin} min late` : "On Time"}
         </span>
       </div>
 
       {/* Route Stations */}
-      <div className="space-y-0">
-        {data.routeStations.map((station, idx) => (
-          <div key={station.code} className="flex items-start gap-3">
+      <div className="space-y-0 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+        {routeStations.map((station, idx) => (
+          <div key={station.code + idx} className="flex items-start gap-3">
             {/* Timeline */}
             <div className="flex flex-col items-center">
               <div
@@ -108,7 +150,7 @@ export default function LiveTracker() {
                     : "bg-slate-700 border-slate-600"
                 }`}
               />
-              {idx < data.routeStations.length - 1 && (
+              {idx < routeStations.length - 1 && (
                 <div
                   className={`w-0.5 h-6 ${
                     station.arrived
@@ -120,7 +162,7 @@ export default function LiveTracker() {
             </div>
 
             {/* Station Info */}
-            <div className="flex-1 -mt-0.5 min-w-0">
+            <div className="flex-1 -mt-0.5 min-w-0 pb-2">
               <div className="flex items-center justify-between">
                 <p
                   className={`text-xs font-medium truncate ${
@@ -137,9 +179,11 @@ export default function LiveTracker() {
                     ({station.code})
                   </span>
                 </p>
-                <span className="text-[10px] text-slate-500 shrink-0 ml-2">
-                  {station.scheduledTime}
-                </span>
+                {station.scheduledTime !== "--:--" && (
+                  <span className="text-[10px] text-slate-500 shrink-0 ml-2">
+                    {station.scheduledTime}
+                  </span>
+                )}
               </div>
             </div>
           </div>
