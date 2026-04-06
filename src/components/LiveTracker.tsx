@@ -14,25 +14,26 @@ export default function LiveTracker({ trainData }: LiveTrackerProps) {
   const data = trainData || defaultData;
   
   // Progress calculation
-  const distanceCovered = isMock ? defaultData.distanceCovered : data.distance_covered;
-  const totalDistance = isMock ? defaultData.totalDistance : data.total_distance;
+  const distanceCovered = isMock ? defaultData.distanceCovered : (data as TrainStatus).distance_covered;
+  const totalDistance = isMock ? defaultData.totalDistance : (data as TrainStatus).total_distance;
   const progressPercent = totalDistance > 0 ? (distanceCovered / totalDistance) * 100 : 0;
   
   // Map fields from dynamic data or fallback
-  const trainName = isMock ? defaultData.trainName : data.train_name;
-  const trainNumber = isMock ? defaultData.trainNumber : data.train_number;
-  const lastUpdated = isMock ? defaultData.lastUpdated : data.last_updated;
-  const currentSpeed = isMock ? defaultData.currentSpeed : data.speed;
-  const delayMin = isMock ? defaultData.delayMinutes : data.delay;
+  const trainName = isMock ? defaultData.trainName : (data as TrainStatus).train_name;
+  const trainNumber = isMock ? defaultData.trainNumber : (data as TrainStatus).train_number;
+  const lastUpdated = isMock ? defaultData.lastUpdated : (data as TrainStatus).last_updated;
+  const currentSpeed = isMock ? defaultData.currentSpeed : (data as TrainStatus).speed;
+  const delayMin = isMock ? defaultData.delayMinutes : (data as TrainStatus).delay;
   
   // Format route stations
   const getStations = () => {
     if (isMock) return defaultData.routeStations;
     
     // Convert dynamic route_stations to format matching UI
-    return data.route_stations.map((st, idx) => {
-      const arrived = idx <= (data.route_stations.indexOf(data.current_station) || 0);
-      const current = st === data.current_station;
+    const apiData = data as TrainStatus;
+    return apiData.route_stations.map((st: string, idx: number) => {
+      const arrived = idx <= (apiData.route_stations.indexOf(apiData.current_station) || 0);
+      const current = st === apiData.current_station;
       return {
         name: st,
         code: st.substring(0, 4).toUpperCase(),
