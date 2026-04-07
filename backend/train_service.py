@@ -197,9 +197,13 @@ def fetch_train_status(query: str) -> Optional[dict]:
     current_station = all_stations[current_idx]
     next_station = all_stations[current_idx + 1]
 
+    # Indian Standard Time (IST) is UTC + 5:30
+    # Render servers run in UTC, so we manually offset for the UI
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+
     # ETA to next station
     eta_minutes = random.randint(15, 90)
-    eta_time = datetime.now() + timedelta(minutes=eta_minutes)
+    eta_time = ist_now + timedelta(minutes=eta_minutes)
 
     # Status
     status = "On Time" if delay <= 5 else "Delayed"
@@ -231,7 +235,7 @@ def fetch_train_status(query: str) -> Optional[dict]:
         },
         "delay_reason": delay_reason,
         "route_stations": all_stations,
-        "last_updated": datetime.now().strftime("%I:%M %p"),
+        "last_updated": ist_now.strftime("%I:%M %p"),
     }
 
 
