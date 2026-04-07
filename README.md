@@ -21,8 +21,6 @@ You can view the live application here:
 -   **Backend**: FastAPI (Python), JWT Authentication, SQLite Database.
 -   **Deployment**: Vercel (Frontend) & Render.com (Backend).
 
-## 📸 Screenshots
-*(Add your screenshots here later)*
 
 ## 🛠️ Installation & Setup
 1.  **Clone the Repository**:
